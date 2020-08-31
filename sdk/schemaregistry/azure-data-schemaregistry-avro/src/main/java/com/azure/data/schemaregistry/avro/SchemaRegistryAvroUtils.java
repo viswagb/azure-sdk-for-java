@@ -5,8 +5,8 @@ package com.azure.data.schemaregistry.avro;
 
 import com.azure.core.experimental.serializer.AvroSerializerProviders;
 import com.azure.core.util.logging.ClientLogger;
+import com.azure.data.schemaregistry.SchemaRegistrySerializationUtils;
 import com.azure.core.util.serializer.TypeReference;
-import com.azure.data.schemaregistry.SchemaRegistryCodec;
 import com.azure.data.schemaregistry.models.SerializationType;
 
 import java.io.ByteArrayInputStream;
@@ -14,10 +14,11 @@ import java.io.ByteArrayOutputStream;
 import java.util.Objects;
 
 /**
- * Base Codec class for Avro encoder and decoder implementations
+ * Utility class for Avro serialization.  Provides all methods required for the core Schema Registry serializer code
+ * to construct Schema Registry messages.
  */
-public class AvroSchemaRegistryCodec implements SchemaRegistryCodec {
-    private final ClientLogger logger = new ClientLogger(AvroSchemaRegistryCodec.class);
+class SchemaRegistryAvroUtils implements SchemaRegistrySerializationUtils {
+    private final ClientLogger logger = new ClientLogger(SchemaRegistryAvroUtils.class);
     private static final Boolean AVRO_SPECIFIC_READER_DEFAULT = false;
 
     private final Boolean avroSpecificReader;
@@ -27,9 +28,9 @@ public class AvroSchemaRegistryCodec implements SchemaRegistryCodec {
      *
      * @param avroSpecificReader flag indicating if decoder should decode records as SpecificRecords
      */
-    public AvroSchemaRegistryCodec(Boolean avroSpecificReader) {
+    public SchemaRegistryAvroUtils(Boolean avroSpecificReader) {
         if (avroSpecificReader == null) {
-            this.avroSpecificReader = AvroSchemaRegistryCodec.AVRO_SPECIFIC_READER_DEFAULT;
+            this.avroSpecificReader = SchemaRegistryAvroUtils.AVRO_SPECIFIC_READER_DEFAULT;
         } else {
             this.avroSpecificReader = avroSpecificReader;
         }

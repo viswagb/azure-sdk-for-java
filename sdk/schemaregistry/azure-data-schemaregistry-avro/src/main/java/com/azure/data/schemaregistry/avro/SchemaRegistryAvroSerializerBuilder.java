@@ -126,13 +126,12 @@ public final class SchemaRegistryAvroSerializerBuilder {
             builder.maxCacheSize(maxCacheSize);
         }
 
-        AvroSchemaRegistryCodec codec = new AvroSchemaRegistryCodec(this.avroSpecificReader);
+        SchemaRegistryAvroUtils avroUtils = new SchemaRegistryAvroUtils(this.avroSpecificReader);
 
         SchemaRegistryAsyncClient client = builder
-//            .addSchemaRegistryCodec(SchemaRegistryAvroSerializer::parseSchemaString)
+            .addSchemaRegistryUtils(avroUtils)
             .buildAsyncClient();
 
-        return new SchemaRegistryAvroSerializer(client, this.avroSpecificReader, this.schemaGroup,
-            this.autoRegisterSchemas);
+        return new SchemaRegistryAvroSerializer(client, this.schemaGroup, this.autoRegisterSchemas, avroUtils);
     }
 }

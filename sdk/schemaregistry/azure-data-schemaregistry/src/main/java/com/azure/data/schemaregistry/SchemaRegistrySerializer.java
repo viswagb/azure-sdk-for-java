@@ -8,10 +8,7 @@ import com.azure.data.schemaregistry.models.SchemaRegistryObject;
 import com.azure.data.schemaregistry.models.SerializationType;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -22,37 +19,56 @@ import static com.azure.core.util.FluxUtil.monoError;
  * Common implementation for all registry-based serializers.
  */
 public abstract class SchemaRegistrySerializer {
+
     private final ClientLogger logger = new ClientLogger(SchemaRegistrySerializer.class);
 
-    static final Boolean AUTO_REGISTER_SCHEMAS_DEFAULT = false;
-    static final String SCHEMA_GROUP_DEFAULT = "$default";
+    private static final Boolean AUTO_REGISTER_SCHEMAS_DEFAULT = false;
+    private static final String SCHEMA_GROUP_DEFAULT = "$default";
+    static final int RECORD_FORMAT_INDICATOR_SIZE = 4;
     static final int SCHEMA_ID_SIZE = 32;
 
     SchemaRegistryAsyncClient schemaRegistryClient;
+    SchemaRegistrySerializationUtils serializationUtils;
 
-    private SerializationType serializationType;
-
-    Boolean autoRegisterSchemas = SchemaRegistrySerializer.AUTO_REGISTER_SCHEMAS_DEFAULT;
-    String schemaGroup = SchemaRegistrySerializer.SCHEMA_GROUP_DEFAULT;
+    private Boolean autoRegisterSchemas = SchemaRegistrySerializer.AUTO_REGISTER_SCHEMAS_DEFAULT;
+    private String schemaGroup = SchemaRegistrySerializer.SCHEMA_GROUP_DEFAULT;
 
     /**
      * Constructor for AbstractSchemaRegistrySerializer implementations.
      *
      * @param schemaRegistryClient client to be used for interfacing with Schema Registry service
+     * @param serializationUtils utils required for registry-based serialization and deserialization
      */
-    public SchemaRegistrySerializer(SchemaRegistryAsyncClient schemaRegistryClient) {
-        this(schemaRegistryClient, null, null);
+    public SchemaRegistrySerializer(SchemaRegistryAsyncClient schemaRegistryClient,
+                                    SchemaRegistrySerializationUtils serializationUtils) {
+        this(schemaRegistryClient, serializationUtils, null, null);
     }
 
-    public SchemaRegistrySerializer(SchemaRegistryAsyncClient schemaRegistryClient, Boolean autoRegisterSchemas,
-        String schemaGroup) {
+    /**
+     * Constructor4 for AbstractSchemaRegistrySerializer implementations.
+     *
+     * @param schemaRegistryClient SchemaRegistryAsyncClient instance for communicating with Azure Schema Registry
+     * @param serializationUtils Utils required for registry-based serialization and deserialization
+     * @param autoRegisterSchemas If true, serializer will always attempt to register schemas.
+     * @param schemaGroup Schema group where serializer will attempt to register or retrieve schemas.
+     */
+    public SchemaRegistrySerializer(SchemaRegistryAsyncClient schemaRegistryClient,
+                                    SchemaRegistrySerializationUtils serializationUtils,
+                                    Boolean autoRegisterSchemas,
+                                    String schemaGroup) {
 
         if (schemaRegistryClient == null) {
+            throw logger.logExceptionAsError(new IllegalArgumentException(
+                "Schema registry client must be initialized and passed into builder."));
+        }
+
+        if (serializationUtils == null) {
             throw logger.logExceptionAsError(
-                new IllegalArgumentException("Schema registry client must be initialized and passed into builder."));
+                new IllegalArgumentException("Serialization utils must be initialized and passed into builder"));
         }
 
         this.schemaRegistryClient = schemaRegistryClient;
+        this.serializationUtils = serializationUtils;
 
         // send configurations only
         if (autoRegisterSchemas != null) {
@@ -65,14 +81,6 @@ public abstract class SchemaRegistrySerializer {
     }
 
     /**
-     * @return String representation of schema type, e.g. "avro" or "json".
-     *
-     * Utilized by schema registry store and client as non-case-sensitive tags for
-     * schemas of a specific type.
-     */
-    protected abstract SerializationType getSerializationType();
-
-    /**
      * Core implementation of registry-based serialization.
      * ID for data schema is fetched from the registry and prefixed to the encoded byte array
      * representation of the object param.
@@ -81,22 +89,28 @@ public abstract class SchemaRegistrySerializer {
      * @param object object to be serialized
      * @return Reactive stream that will indicate operation completion.
      */
-    protected Mono<Void> serializeAsync(OutputStream s, Object object) {
+    protected Mono<Void> serializeInternalAsync(OutputStream s, Object object) {
         if (object == null) {
             return monoError(logger, new NullPointerException(
                 "Null object, behavior should be defined in concrete serializer implementation."));
         }
 
-        String schemaString = getSchemaString(object);
-        String schemaName = getSchemaName(object);
+        String schemaString = serializationUtils.getSchemaString(object);
+        String schemaName = serializationUtils.getSchemaName(object);
 
-        return this.maybeRegisterSchema(this.schemaGroup, schemaName, schemaString, this.serializationType)
+        return this.maybeRegisterSchema(this.schemaGroup, schemaName, schemaString,
+                serializationUtils.getSerializationType())
             .handle((id, sink) -> {
-                ByteBuffer idBuffer = ByteBuffer.allocate(SchemaRegistrySerializer.SCHEMA_ID_SIZE)
+                ByteBuffer recordFormatIndicatorBuffer = ByteBuffer
+                    .allocate(SchemaRegistrySerializer.RECORD_FORMAT_INDICATOR_SIZE)
+                    .put(new byte[] {0x00, 0x00, 0x00, 0x00});
+                ByteBuffer idBuffer = ByteBuffer
+                    .allocate(SchemaRegistrySerializer.SCHEMA_ID_SIZE)
                     .put(id.getBytes(StandardCharsets.UTF_8));
                 try {
+                    s.write(recordFormatIndicatorBuffer.array());
                     s.write(idBuffer.array());
-                    s.write(encode(object));
+                    s.write(serializationUtils.encode(object));
                 } catch (IOException e) {
                     sink.error(new UncheckedIOException(e.getMessage(), e));
                 }
@@ -110,7 +124,7 @@ public abstract class SchemaRegistrySerializer {
      * @param s InputStream containing bytes encoded by an Azure Schema Registry producer
      * @return object, deserialized with the prefixed schema
      */
-    protected Mono<Object> deserializeAsync(InputStream s) {
+    protected Mono<Object> deserializeInternalAsync(InputStream s) {
         if (s == null) {
             return Mono.empty();
         }
@@ -126,6 +140,13 @@ public abstract class SchemaRegistrySerializer {
                 }
 
                 ByteBuffer buffer = ByteBuffer.wrap(payload);
+
+                byte[] recordFormatIndicator = getRecordFormatIndicator(buffer);
+                if (!Arrays.equals(recordFormatIndicator, new byte[]{0x00, 0x00, 0x00, 0x00})) {
+                    return Mono.error(
+                        new IllegalStateException("Illegal format: unsupport record format indicator in payload"));
+                }
+
                 String schemaId = getSchemaIdFromPayload(buffer);
 
                 return this.schemaRegistryClient.getSchema(schemaId)
@@ -144,42 +165,19 @@ public abstract class SchemaRegistrySerializer {
                         int length = buffer.limit() - SchemaRegistrySerializer.SCHEMA_ID_SIZE;
                         byte[] b = Arrays.copyOfRange(buffer.array(), start, start + length);
 
-                        sink.next(decode(b, payloadSchema));
+                        sink.next(serializationUtils.decode(b, payloadSchema));
                     });
             });
     }
 
     /**
-     * Return schema name for storing in registry store
-     * @param object Schema object
-     * Refer to Schema Registry documentation for information on schema grouping and naming.
      *
-     * @return schema name
      */
-    protected abstract String getSchemaName(Object object);
-
-    /**
-     * Returns string representation of schema object to be stored in the service.
-     *
-     * @param object Schema object used to generate schema string
-     * @return String representation of schema object parameter
-     */
-    protected abstract String getSchemaString(Object object);
-
-    /**
-     * Converts object into stream containing the encoded representation of the object.
-     * @param object Object to be encoded into byte stream
-     * @return output stream containing byte representation of object
-     */
-    protected abstract byte[] encode(Object object);
-
-    /**
-     * Decodes byte array into Object given provided schema object.
-     * @param encodedBytes payload to be decoded
-     * @param schemaObject object used to decode the payload
-     * @return deserialized object
-     */
-    protected abstract Object decode(byte[] encodedBytes, Object schemaObject);
+    private byte[] getRecordFormatIndicator(ByteBuffer buffer) {
+        byte[] indicatorBytes = new byte[SchemaRegistrySerializer.RECORD_FORMAT_INDICATOR_SIZE];
+        buffer.get(indicatorBytes);
+        return indicatorBytes;
+    }
 
     /**
      * @param buffer full payload bytes
