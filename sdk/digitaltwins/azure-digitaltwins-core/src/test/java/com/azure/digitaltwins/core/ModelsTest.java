@@ -18,6 +18,9 @@ import static com.azure.digitaltwins.core.TestHelper.assertRestException;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * Sync client implementation of the model tests defined in {@link ModelsTestBase}
+ */
 public class ModelsTest extends ModelsTestBase {
 
     @ParameterizedTest(name = DISPLAY_NAME_WITH_ARGUMENTS)

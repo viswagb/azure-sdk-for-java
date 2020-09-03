@@ -11,6 +11,10 @@ import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * This abstract test class defines all the tests that both the sync and async test classes need to implement. It also
+ * houses some model test specific helper functions.
+ */
 public abstract class ModelsTestBase extends DigitalTwinsTestBase {
     @Test
     public abstract void modelLifecycleTest(HttpClient httpClient, DigitalTwinsServiceVersion serviceVersion);

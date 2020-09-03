@@ -16,6 +16,9 @@ import static com.azure.digitaltwins.core.TestHelper.DISPLAY_NAME_WITH_ARGUMENTS
 import static com.azure.digitaltwins.core.TestHelper.assertRestException;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Async client implementation of the model tests defined in {@link ModelsTestBase}
+ */
 public class ModelsAsyncTest extends ModelsTestBase {
     private DigitalTwinsAsyncClient asyncClient;
 
