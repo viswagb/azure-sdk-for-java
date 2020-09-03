@@ -149,7 +149,7 @@ public class TestAssetsHelper {
 
             return resourceFileContents;
         } catch (IOException e) {
-            throw new RuntimeException("Cannot find file " + fileName, e);
+            throw new RuntimeException("Cannot find file /test-assets/" + fileName + ".json in the resources folder", e);
         }
     }
 
