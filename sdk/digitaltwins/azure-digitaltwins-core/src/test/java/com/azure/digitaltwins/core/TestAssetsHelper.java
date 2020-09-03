@@ -8,6 +8,7 @@ import org.opentest4j.AssertionFailedError;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
@@ -189,7 +190,7 @@ public class TestAssetsHelper {
             }
             catch (ErrorResponseException e)
             {
-                if (e.getResponse().getStatusCode() == 404)
+                if (e.getResponse().getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND)
                 {
                     return id;
                 }
