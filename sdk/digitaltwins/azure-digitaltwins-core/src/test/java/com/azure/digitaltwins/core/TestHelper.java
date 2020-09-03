@@ -1,6 +1,5 @@
 package com.azure.digitaltwins.core;
 
-import com.azure.core.exception.HttpResponseException;
 import com.azure.core.http.HttpClient;
 import com.azure.core.util.Configuration;
 import com.azure.core.util.CoreUtils;

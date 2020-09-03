@@ -3,7 +3,6 @@ package com.azure.digitaltwins.core;
 import com.azure.core.http.HttpClient;
 import com.azure.core.http.rest.PagedIterable;
 import com.azure.digitaltwins.core.models.ModelData;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -89,8 +88,8 @@ public class ModelsTest extends ModelsTestBase {
         DigitalTwinsClient client = getClient(httpClient, serviceVersion);
 
         final List<String> modelsToCreate = new ArrayList<>();
-        final String wardModelId = TestAssetsHelper.GetUniqueModelId(client, TestAssetDefaults.WardModelId);
-        final String wardModelPayload = TestAssetsHelper.GetWardModelPayload(wardModelId);
+        final String wardModelId = TestAssetsHelper.getUniqueModelId(client, TestAssetDefaults.wardModelId);
+        final String wardModelPayload = TestAssetsHelper.getWardModelPayload(wardModelId);
         modelsToCreate.add(wardModelPayload);
 
         PagedIterable<ModelData> createdModels = client.createModels(modelsToCreate);
@@ -118,10 +117,10 @@ public class ModelsTest extends ModelsTestBase {
     }
 
     private static void createModelsRunner(DigitalTwinsClient client, Consumer<List<String>> createModelsTestRunner) {
-        String buildingModelId = TestAssetsHelper.GetUniqueModelId(client, TestAssetDefaults.BuildingModelId);
-        String floorModelId = TestAssetsHelper.GetUniqueModelId(client, TestAssetDefaults.FloorModelId);
-        String hvacModelId = TestAssetsHelper.GetUniqueModelId(client, TestAssetDefaults.HvacModelId);
-        String wardModelId = TestAssetsHelper.GetUniqueModelId(client, TestAssetDefaults.WardModelId);
+        String buildingModelId = TestAssetsHelper.getUniqueModelId(client, TestAssetDefaults.buildingModelId);
+        String floorModelId = TestAssetsHelper.getUniqueModelId(client, TestAssetDefaults.floorModelId);
+        String hvacModelId = TestAssetsHelper.getUniqueModelId(client, TestAssetDefaults.hvacModelId);
+        String wardModelId = TestAssetsHelper.getUniqueModelId(client, TestAssetDefaults.wardModelId);
 
         createModelsRunner(buildingModelId, floorModelId, hvacModelId, wardModelId, createModelsTestRunner);
     }

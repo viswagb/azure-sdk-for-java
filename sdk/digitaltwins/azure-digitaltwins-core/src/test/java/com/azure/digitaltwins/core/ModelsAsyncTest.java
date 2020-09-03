@@ -2,7 +2,6 @@ package com.azure.digitaltwins.core;
 
 import com.azure.core.http.HttpClient;
 import com.azure.digitaltwins.core.models.ModelData;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import reactor.test.StepVerifier;
@@ -103,8 +102,8 @@ public class ModelsAsyncTest extends ModelsTestBase {
         DigitalTwinsAsyncClient asyncClient = getAsyncClient(httpClient, serviceVersion);
 
         final List<String> modelsToCreate = new ArrayList<>();
-        final String wardModelId = TestAssetsHelper.GetUniqueModelId(asyncClient, TestAssetDefaults.WardModelId);
-        final String wardModelPayload = TestAssetsHelper.GetWardModelPayload(wardModelId);
+        final String wardModelId = TestAssetsHelper.getUniqueModelId(asyncClient, TestAssetDefaults.wardModelId);
+        final String wardModelPayload = TestAssetsHelper.getWardModelPayload(wardModelId);
         modelsToCreate.add(wardModelPayload);
 
         StepVerifier.create(asyncClient.createModels(modelsToCreate))
@@ -128,10 +127,10 @@ public class ModelsAsyncTest extends ModelsTestBase {
     }
 
     private static void createModelsRunner(DigitalTwinsAsyncClient asyncClient, Consumer<List<String>> createModelsTestRunner) {
-        String buildingModelId = TestAssetsHelper.GetUniqueModelId(asyncClient, TestAssetDefaults.BuildingModelId);
-        String floorModelId = TestAssetsHelper.GetUniqueModelId(asyncClient, TestAssetDefaults.FloorModelId);
-        String hvacModelId = TestAssetsHelper.GetUniqueModelId(asyncClient, TestAssetDefaults.HvacModelId);
-        String wardModelId = TestAssetsHelper.GetUniqueModelId(asyncClient, TestAssetDefaults.WardModelId);
+        String buildingModelId = TestAssetsHelper.getUniqueModelId(asyncClient, TestAssetDefaults.buildingModelId);
+        String floorModelId = TestAssetsHelper.getUniqueModelId(asyncClient, TestAssetDefaults.floorModelId);
+        String hvacModelId = TestAssetsHelper.getUniqueModelId(asyncClient, TestAssetDefaults.hvacModelId);
+        String wardModelId = TestAssetsHelper.getUniqueModelId(asyncClient, TestAssetDefaults.wardModelId);
 
         createModelsRunner(buildingModelId, floorModelId, hvacModelId, wardModelId, createModelsTestRunner);
     }

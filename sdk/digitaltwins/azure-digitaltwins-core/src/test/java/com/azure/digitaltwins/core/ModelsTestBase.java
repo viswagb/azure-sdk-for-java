@@ -29,9 +29,9 @@ public abstract class ModelsTestBase extends DigitalTwinsTestBase {
     public abstract void getModelThrowsIfModelIdInvalid(HttpClient httpClient, DigitalTwinsServiceVersion serviceVersion);
 
     static void createModelsRunner(String buildingModelId, String floorModelId, String hvacModelId, String wardModelId, Consumer<List<String>> createModelsTestRunner) {
-        String modelBuilding = TestAssetsHelper.GetBuildingModelPayload(buildingModelId, hvacModelId, floorModelId);
-        String modelHvac = TestAssetsHelper.GetHvacModelPayload(hvacModelId, floorModelId);
-        String modelWard = TestAssetsHelper.GetWardModelPayload(wardModelId);
+        String modelBuilding = TestAssetsHelper.getBuildingModelPayload(buildingModelId, hvacModelId, floorModelId);
+        String modelHvac = TestAssetsHelper.getHvacModelPayload(hvacModelId, floorModelId);
+        String modelWard = TestAssetsHelper.getWardModelPayload(wardModelId);
 
         List<String> modelsList = new ArrayList<>();
         modelsList.add(modelBuilding);
