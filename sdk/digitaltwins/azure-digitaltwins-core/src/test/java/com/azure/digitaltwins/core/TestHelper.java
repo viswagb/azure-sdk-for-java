@@ -29,7 +29,7 @@ public class TestHelper {
     static void assertRestException(Runnable exceptionThrower, Class<? extends ErrorResponseException> expectedExceptionType, int expectedStatusCode) {
         try {
             exceptionThrower.run();
-            fail();
+            fail("Expected exception was not thrown");
         } catch (Throwable ex) {
             assertRestException(ex, expectedExceptionType, expectedStatusCode);
         }
